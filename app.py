@@ -65,5 +65,90 @@ def api_pool_count():
     count = get_pool_count()
     return jsonify({'count': count})
 
+def setup_docker_environment():
+    """Dockerコンテナの起動状態を確認し、必要に応じて起動"""
+    import subprocess
+    import sys
+    
+    try:
+        # Dockerがインストールされているか確認
+        result = subprocess.run(['docker', '--version'], 
+                              capture_output=True, text=True, timeout=5)
+        if result.returncode != 0:
+            print("⚠️  Dockerがインストールされていません")
+            print("   Docker Desktopをインストールしてください: https://www.docker.com/products/docker-desktop")
+            sys.exit(1)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        print("⚠️  Dockerがインストールされていません")
+        print("   Docker Desktopをインストールしてください: https://www.docker.com/products/docker-desktop")
+        sys.exit(1)
+    
+    try:
+        # tanka_postgresコンテナが起動しているか確認
+        result = subprocess.run(['docker', 'ps', '--filter', 'name=tanka_postgres', '--format', '{{.Names}}'],
+                              capture_output=True, text=True, timeout=10)
+        
+        if 'tanka_postgres' not in result.stdout:
+            print("🐳 PostgreSQLコンテナを起動中...")
+            # docker-compose up -d を実行
+            result = subprocess.run(['docker-compose', 'up', '-d'],
+                                  capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                print("✓ PostgreSQLコンテナを起動しました")
+            else:
+                print(f"✗ コンテナ起動エラー: {result.stderr}")
+                sys.exit(1)
+        else:
+            print("✓ PostgreSQLコンテナは既に起動しています")
+    except subprocess.TimeoutExpired:
+        print("✗ Dockerコマンドがタイムアウトしました")
+        sys.exit(1)
+    except Exception as e:
+        print(f"✗ Docker環境のセットアップエラー: {e}")
+        sys.exit(1)
+
+
+def wait_for_database(max_retries=30, retry_interval=1):
+    """データベース接続を確認し、接続できるまで待機"""
+    import time
+    from config import get_db_connection
+    
+    print("🔌 データベース接続を確認中...")
+    
+    for i in range(max_retries):
+        try:
+            conn = get_db_connection()
+            conn.close()
+            print("✓ データベースに接続しました")
+            return True
+        except Exception as e:
+            if i == 0:
+                print(f"   データベース起動待機中... (最大{max_retries}秒)")
+            time.sleep(retry_interval)
+    
+    print(f"✗ データベースに接続できませんでした（{max_retries}秒経過）")
+    print("   docker-compose logsでログを確認してください")
+    return False
+
+
 if __name__ == '__main__':
+    print("=== 匿名短歌交換アプリ起動 ===\n")
+    
+    # 1. Docker環境のセットアップ
+    setup_docker_environment()
+    
+    # 2. データベース接続確認
+    if not wait_for_database():
+        import sys
+        sys.exit(1)
+    
+    # 3. データベース初期化（初回のみ）
+    print("📊 データベースを初期化中...")
+    from init_db import init_database
+    init_database()
+    
+    print("\n✨ アプリケーションを起動します")
+    print("   ブラウザで http://localhost:5000 にアクセスしてください\n")
+    
+    # 4. Flaskアプリ起動
     app.run(debug=True, host='0.0.0.0', port=5000)

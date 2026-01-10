@@ -92,13 +92,64 @@ tanka_exchange/
 
 ##  セットアップ
 
-### 1. 依存パッケージのインストール
+### 前提条件
+
+- **Python 3.7以上**
+- **Docker Desktop** ([インストールはこちら](https://www.docker.com/products/docker-desktop))
+
+### 簡単セットアップ（推奨）
+
+Docker Desktopをインストール済みの場合、以下のコマンドだけで起動できます:
+
+```bash
+# 1. 依存パッケージのインストール
+pip install -r requirements.txt
+
+# 2. アプリケーションを起動（Docker自動起動 + DB自動初期化）
+python app.py
+```
+
+アプリが自動的に以下を実行します:
+- ✅ Dockerコンテナの起動確認と自動起動
+- ✅ データベース接続の確認
+- ✅ データベースの初期化（初回のみ）
+
+ブラウザで http://localhost:5000 にアクセス
+
+### デスクトップアプリとして起動
+
+ブラウザではなく、専用のデスクトップウィンドウで起動することもできます:
+
+```bash
+# 1. 依存パッケージのインストール（初回のみ）
+pip install -r requirements.txt
+
+# 2. デスクトップアプリとして起動
+python desktop_app.py
+```
+
+デスクトップウィンドウが自動的に開きます。ブラウザは不要です。
+
+---
+
+### 手動セットアップ（従来の方法）
+
+#### 1. 依存パッケージのインストール
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. PostgreSQLの設定
+#### 2. PostgreSQLの設定
+
+**Option A: Docker使用（推奨）**
+
+```bash
+# PostgreSQLコンテナを起動
+docker-compose up -d
+```
+
+**Option B: ローカルPostgreSQL**
 
 1. PostgreSQLをインストール
 2. データベースとユーザーを作成:
@@ -109,7 +160,7 @@ CREATE USER tanka_user WITH PASSWORD 'password';
 GRANT ALL PRIVILEGES ON DATABASE tanka_db TO tanka_user;
 ```
 
-### 3. 環境変数の設定
+#### 3. 環境変数の設定
 
 `.env`ファイルを編集して、DB接続情報を設定:
 
@@ -121,13 +172,13 @@ DB_USER=tanka_user
 DB_PASSWORD=password
 ```
 
-### 4. データベースの初期化
+#### 4. データベースの初期化
 
 ```bash
 python init_db.py
 ```
 
-### 5. アプリケーションの起動
+#### 5. アプリケーションの起動
 
 ```bash
 python app.py
