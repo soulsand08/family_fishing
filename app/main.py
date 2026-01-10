@@ -4,7 +4,7 @@ Database_Final-mainのmain.pyに相当
 Foreign Key, JOIN, SubQueryを使用した高度な機能を実装
 """
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session
-from models import (
+from .models import (
     get_random_tanka, delete_tanka, insert_tanka, get_pool_count,
     get_or_create_user, record_exchange, get_user_exchange_history,
     get_tankas_by_category, get_popular_tankas, get_category_stats,
@@ -247,7 +247,7 @@ def setup_docker_environment():
 def wait_for_database(max_retries=30, retry_interval=1):
     """データベース接続を確認し、接続できるまで待機"""
     import time
-    from config import get_db_connection
+    from .config import get_db_connection
     
     print("🔌 データベース接続を確認中...")
     

@@ -28,7 +28,7 @@ def main():
     
     # 3. データベース初期化（初回のみ）
     print("📊 データベースを初期化中...")
-    from init_db import init_database
+    from scripts.init_db import init_database
     init_database()
     
     print("\n✨ デスクトップアプリケーションを起動します\n")

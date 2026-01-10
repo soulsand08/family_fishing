@@ -2,7 +2,11 @@
 migrate_db.py - データベースマイグレーションスクリプト
 既存のtanka_poolテーブルにexchange_countカラムを追加
 """
-from config import get_db_connection
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.config import get_db_connection
 
 def migrate_database():
     """既存テーブルにカラムを追加"""

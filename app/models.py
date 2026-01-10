@@ -3,7 +3,7 @@ models.py - DBモデル・操作関数
 tanka_poolテーブルの操作を担当
 Foreign Key, JOIN, SubQueryを使用した高度なSQL機能を実装
 """
-from config import get_db_connection
+from .config import get_db_connection
 import uuid
 
 # ==================== ユーザー管理 ====================

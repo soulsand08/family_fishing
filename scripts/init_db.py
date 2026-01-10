@@ -3,7 +3,11 @@ init_db.py - DB初期化スクリプト
 テーブル作成とダミーデータ投入
 Foreign Key, JOIN, SubQueryを使用する本格的なDB設計
 """
-from config import get_db_connection
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.config import get_db_connection
 
 # ダミー短歌データ（カテゴリ情報付き）
 DUMMY_TANKAS = [
