@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイ統計 - 匿名短歌交換</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .user-stats-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-card h2 {
+            color: #8b4789;
+            border-bottom: 2px solid #8b4789;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .stat-value {
+            color: #8b4789;
+            font-size: 1.2em;
+        }
+
+        .history-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .tanka-content {
+            white-space: pre-line;
+            font-family: serif;
+            line-height: 1.6;
+            background: #f8f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+
+        .exchange-date {
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="user-stats-container">
+        <h1>👤 マイ統計</h1>
+        <p><em>SQL要素: Foreign Key, JOIN, GROUP BY</em></p>
+
+        <!-- ユーザー統計 -->
+        <div class="stats-card">
+            <h2>📈 あなたの交換統計</h2>
+            {% if stats %}
+            <div class="stat-item">
+                <span class="stat-label">セッションID:</span>
+                <span class="stat-value" style="font-size: 0.9em;">{{ stats.session_id[:16] }}...</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">総交換回数:</span>
+                <span class="stat-value">{{ stats.total_exchanges }}回</span>
+            </div>
+            {% if stats.first_exchange %}
+            <div class="stat-item">
+                <span class="stat-label">初回交換:</span>
+                <span class="stat-value" style="font-size: 0.9em;">{{ stats.first_exchange.strftime('%Y-%m-%d %H:%M')
+                    }}</span>
+            </div>
+            {% endif %}
+            {% if stats.last_exchange %}
+            <div class="stat-item">
+                <span class="stat-label">最終交換:</span>
+                <span class="stat-value" style="font-size: 0.9em;">{{ stats.last_exchange.strftime('%Y-%m-%d %H:%M')
+                    }}</span>
+            </div>
+            {% endif %}
+            {% else %}
+            <p style="color: #999; text-align: center;">まだ交換履歴がありません</p>
+            {% endif %}
+        </div>
+
+        <!-- 交換履歴 -->
+        <div class="stats-card">
+            <h2>📜 交換履歴（最新20件）</h2>
+            <p><em>Foreign Keyによる履歴管理</em></p>
+
+            {% if history %}
+            {% for item in history %}
+            <div class="history-item">
+                <div class="exchange-date">{{ item[3].strftime('%Y-%m-%d %H:%M:%S') }}</div>
+
+                <div style="margin: 10px 0;">
+                    <strong style="color: #d9534f;">あなたが渡した短歌:</strong>
+                    <div class="tanka-content">{{ item[1] }}</div>
+                </div>
+
+                <div style="margin: 10px 0;">
+                    <strong style="color: #5cb85c;">あなたが受け取った短歌:</strong>
+                    <div class="tanka-content">{{ item[2] }}</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="color: #999; text-align: center; padding: 40px;">
+                まだ交換履歴がありません<br>
+                <a href="/submit" style="color: #8b4789;">短歌を投稿して交換してみましょう</a>
+            </p>
+            {% endif %}
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/stats" style="color: #8b4789; margin-right: 20px;">📊 全体統計</a>
+            <a href="/" style="color: #8b4789;">🏠 ホーム</a>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,16 +1,31 @@
 """
 app.py - メインFlaskアプリケーション
 Database_Final-mainのmain.pyに相当
+Foreign Key, JOIN, SubQueryを使用した高度な機能を実装
 """
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-from models import get_random_tanka, delete_tanka, insert_tanka, get_pool_count
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from models import (
+    get_random_tanka, delete_tanka, insert_tanka, get_pool_count,
+    get_or_create_user, record_exchange, get_user_exchange_history,
+    get_tankas_by_category, get_popular_tankas, get_category_stats,
+    get_all_categories, get_all_tankas_with_categories, get_user_exchange_stats
+)
+import uuid
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key-change-this-in-production'  # セッション用
+
+@app.before_request
+def ensure_session():
+    """セッションIDを確保"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
 
 @app.route('/')
 def home():
     """ホーム画面"""
-    return render_template('home.html')
+    pool_count = get_pool_count()
+    return render_template('home.html', pool_count=pool_count)
 
 @app.route('/submit')
 def submit():
@@ -24,8 +39,13 @@ def exchange():
     1. DBからランダム1件取得
     2. 取得した短歌をDBから削除
     3. ユーザーの短歌をDBにINSERT
-    4. 取得した短歌をレスポンスとして返す
+    4. 交換履歴を記録（Foreign Key使用）
+    5. 取得した短歌をレスポンスとして返す
     """
+    # セッションIDからユーザーを取得/作成
+    session_id = session.get('session_id')
+    user_id = get_or_create_user(session_id)
+    
     # 5行の入力を結合
     lines = []
     for i in range(1, 6):
@@ -44,20 +64,80 @@ def exchange():
     if received is None:
         return render_template('submit.html', error='交換できる短歌がありません')
     
-    tanka_id, tanka_content = received
-    
-    # 取得した短歌を削除
-    delete_tanka(tanka_id)
+    received_tanka_id, received_tanka_content = received
     
     # ユーザーの短歌を登録
-    insert_tanka(user_tanka)
+    given_tanka_id = insert_tanka(user_tanka, user_id)
     
-    return render_template('result.html', received_tanka=tanka_content)
+    # 交換履歴を記録（Foreign Key制約により、user_idはusersテーブルに存在する必要がある）
+    record_exchange(
+        user_id=user_id,
+        given_tanka_id=given_tanka_id,
+        given_content=user_tanka,
+        received_tanka_id=received_tanka_id,
+        received_content=received_tanka_content
+    )
+    
+    # 取得した短歌を削除
+    delete_tanka(received_tanka_id)
+    
+    return render_template('result.html', received_tanka=received_tanka_content)
 
 @app.route('/history')
 def history():
     """受信履歴画面（LocalStorageから読み込み）"""
     return render_template('history.html')
+
+@app.route('/stats')
+def stats():
+    """
+    統計画面
+    JOIN, SubQueryを使用した高度な統計機能
+    """
+    # 人気ランキング（SubQuery使用）
+    popular_tankas = get_popular_tankas(limit=10)
+    
+    # カテゴリ別統計（SubQuery使用）
+    category_stats = get_category_stats()
+    
+    # 全短歌一覧（JOIN使用）
+    all_tankas = get_all_tankas_with_categories()
+    
+    return render_template('stats.html', 
+                         popular_tankas=popular_tankas,
+                         category_stats=category_stats,
+                         all_tankas=all_tankas)
+
+@app.route('/category/<category_name>')
+def category(category_name):
+    """
+    カテゴリ別短歌一覧
+    JOIN使用: tanka_pool JOIN tanka_categories JOIN categories
+    """
+    tankas = get_tankas_by_category(category_name)
+    categories = get_all_categories()
+    
+    return render_template('category.html', 
+                         category_name=category_name,
+                         tankas=tankas,
+                         categories=categories)
+
+@app.route('/user/stats')
+def user_stats():
+    """
+    ユーザー統計画面
+    Foreign Keyを使用した履歴取得
+    """
+    session_id = session.get('session_id')
+    user_id = get_or_create_user(session_id)
+    
+    # ユーザー統計（JOIN使用）
+    stats = get_user_exchange_stats(user_id)
+    
+    # 交換履歴（Foreign Key使用）
+    history = get_user_exchange_history(user_id, limit=20)
+    
+    return render_template('user_stats.html', stats=stats, history=history)
 
 @app.route('/api/pool_count')
 def api_pool_count():
@@ -69,42 +149,98 @@ def setup_docker_environment():
     """Dockerコンテナの起動状態を確認し、必要に応じて起動"""
     import subprocess
     import sys
+    import os
     
+    print("🔍 Docker環境を確認中...")
+    
+    # 1. Dockerがインストールされているか確認
     try:
-        # Dockerがインストールされているか確認
         result = subprocess.run(['docker', '--version'], 
-                              capture_output=True, text=True, timeout=5)
+                              capture_output=True, text=True, timeout=10)
         if result.returncode != 0:
-            print("⚠️  Dockerがインストールされていません")
+            print("\n⚠️  Dockerがインストールされていません")
             print("   Docker Desktopをインストールしてください: https://www.docker.com/products/docker-desktop")
             sys.exit(1)
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        print("⚠️  Dockerがインストールされていません")
+        print(f"✓ Docker検出: {result.stdout.strip()}")
+    except subprocess.TimeoutExpired:
+        print("\n✗ Dockerコマンドがタイムアウトしました")
+        print("   Docker Desktopが起動しているか確認してください")
+        sys.exit(1)
+    except FileNotFoundError:
+        print("\n⚠️  Dockerがインストールされていません")
         print("   Docker Desktopをインストールしてください: https://www.docker.com/products/docker-desktop")
         sys.exit(1)
     
+    # 2. Docker Desktopが起動しているか確認（docker infoで確認）
     try:
-        # tanka_postgresコンテナが起動しているか確認
+        print("🐳 Docker Desktopの起動状態を確認中...")
+        result = subprocess.run(['docker', 'info'], 
+                              capture_output=True, text=True, timeout=15)
+        if result.returncode != 0:
+            print("\n✗ Docker Desktopが起動していません")
+            print("   Docker Desktopを起動してから、再度実行してください")
+            print(f"   エラー詳細: {result.stderr}")
+            sys.exit(1)
+        print("✓ Docker Desktopは起動しています")
+    except subprocess.TimeoutExpired:
+        print("\n✗ Docker Desktopの確認がタイムアウトしました")
+        print("   Docker Desktopを再起動してから、再度実行してください")
+        sys.exit(1)
+    
+    # 3. docker-composeコマンドの確認
+    try:
+        # docker compose (V2) または docker-compose (V1) を確認
+        result_v2 = subprocess.run(['docker', 'compose', 'version'], 
+                                  capture_output=True, text=True, timeout=10)
+        if result_v2.returncode == 0:
+            compose_cmd = ['docker', 'compose']
+            print(f"✓ Docker Compose検出: {result_v2.stdout.strip()}")
+        else:
+            result_v1 = subprocess.run(['docker-compose', '--version'], 
+                                      capture_output=True, text=True, timeout=10)
+            if result_v1.returncode == 0:
+                compose_cmd = ['docker-compose']
+                print(f"✓ Docker Compose検出: {result_v1.stdout.strip()}")
+            else:
+                print("\n✗ docker-composeコマンドが見つかりません")
+                sys.exit(1)
+    except subprocess.TimeoutExpired:
+        print("\n✗ docker-composeコマンドの確認がタイムアウトしました")
+        sys.exit(1)
+    except FileNotFoundError:
+        print("\n✗ docker-composeコマンドが見つかりません")
+        sys.exit(1)
+    
+    # 4. tanka_postgresコンテナが起動しているか確認
+    try:
+        print("📦 PostgreSQLコンテナの状態を確認中...")
         result = subprocess.run(['docker', 'ps', '--filter', 'name=tanka_postgres', '--format', '{{.Names}}'],
-                              capture_output=True, text=True, timeout=10)
+                              capture_output=True, text=True, timeout=15)
         
         if 'tanka_postgres' not in result.stdout:
             print("🐳 PostgreSQLコンテナを起動中...")
             # docker-compose up -d を実行
-            result = subprocess.run(['docker-compose', 'up', '-d'],
-                                  capture_output=True, text=True, timeout=60)
+            result = subprocess.run(compose_cmd + ['up', '-d'],
+                                  capture_output=True, text=True, timeout=120)
             if result.returncode == 0:
                 print("✓ PostgreSQLコンテナを起動しました")
+                if result.stdout:
+                    print(f"   {result.stdout.strip()}")
             else:
-                print(f"✗ コンテナ起動エラー: {result.stderr}")
+                print(f"\n✗ コンテナ起動エラー:")
+                print(f"   {result.stderr}")
                 sys.exit(1)
         else:
             print("✓ PostgreSQLコンテナは既に起動しています")
     except subprocess.TimeoutExpired:
-        print("✗ Dockerコマンドがタイムアウトしました")
+        print("\n✗ Dockerコンテナの起動がタイムアウトしました")
+        print("   以下を確認してください:")
+        print("   1. Docker Desktopが正常に動作しているか")
+        print("   2. システムリソース（CPU/メモリ）に余裕があるか")
+        print("   3. docker-compose.ymlファイルが存在するか")
         sys.exit(1)
     except Exception as e:
-        print(f"✗ Docker環境のセットアップエラー: {e}")
+        print(f"\n✗ Docker環境のセットアップエラー: {e}")
         sys.exit(1)
 
 

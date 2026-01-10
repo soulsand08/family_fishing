@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ category_name }} - 匿名短歌交換</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .category-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .category-nav {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .category-nav a {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 16px;
+            background: #8b4789;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .category-nav a:hover {
+            background: #6d3569;
+        }
+
+        .tanka-list {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tanka-item {
+            border-bottom: 1px solid #eee;
+            padding: 20px 0;
+        }
+
+        .tanka-item:last-child {
+            border-bottom: none;
+        }
+
+        .tanka-content {
+            white-space: pre-line;
+            font-family: serif;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .tanka-id {
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="category-container">
+        <h1>📚 カテゴリ: {{ category_name }}</h1>
+        <p><em>SQL要素: INNER JOIN（3テーブル結合）</em></p>
+
+        <div class="category-nav">
+            <strong>カテゴリ一覧:</strong>
+            {% for cat in categories %}
+            <a href="/category/{{ cat[1] }}">{{ cat[1] }}</a>
+            {% endfor %}
+            <a href="/stats" style="background: #555;">📊 統計に戻る</a>
+        </div>
+
+        <div class="tanka-list">
+            <h2>{{ category_name }}の短歌（{{ tankas|length }}件）</h2>
+
+            {% if tankas %}
+            {% for tanka in tankas %}
+            <div class="tanka-item">
+                <div class="tanka-id">ID: {{ tanka[0] }}</div>
+                <div class="tanka-content">{{ tanka[1] }}</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="color: #999; text-align: center; padding: 40px;">
+                このカテゴリの短歌はまだありません
+            </p>
+            {% endif %}
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/" style="color: #8b4789;">🏠 ホームに戻る</a>
+        </div>
+    </div>
+</body>
+
+</html>

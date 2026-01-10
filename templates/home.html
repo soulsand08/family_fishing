@@ -21,6 +21,20 @@
             <span class="btn-icon">📖</span>
             受け取った短歌を見る
         </a>
+        <a href="{{ url_for('stats') }}" class="btn btn-secondary">
+            <span class="btn-icon">📊</span>
+            統計を見る
+        </a>
+        <a href="{{ url_for('user_stats') }}" class="btn btn-secondary">
+            <span class="btn-icon">👤</span>
+            マイ統計
+        </a>
     </div>
+
+    {% if pool_count %}
+    <p style="text-align: center; color: #999; margin-top: 20px;">
+        現在のプール: {{ pool_count }}件
+    </p>
+    {% endif %}
 </div>
 {% endblock %}
