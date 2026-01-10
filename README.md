@@ -2,7 +2,7 @@
 
 匿名で短歌を投稿し、他の誰かの短歌と交換するWebアプリケーションです。
 
-## 🎯 概要
+##  概要
 
 - ユーザーは匿名で利用可能
 - 短歌を投稿すると、DBから他ユーザーの短歌をランダムに1件受け取る
@@ -10,7 +10,7 @@
 - 投稿した短歌はDBに保存される
 - 「INSERT 1件 + DELETE 1件」でDB内短歌総量は常に一定
 
-## 🏗 アーキテクチャ
+##  アーキテクチャ
 
 Web 3層構造:
 - **Presentation Layer**: Web UI（HTML/CSS/JavaScript）
@@ -64,7 +64,7 @@ erDiagram
 
 > **Note**: 匿名性を保つため、ユーザー情報は一切保存しません。受信履歴はブラウザのLocalStorageにのみ保存されます。
 
-## 📁 ファイル構成
+##  ファイル構成
 
 ```
 tanka_exchange/
@@ -90,7 +90,7 @@ tanka_exchange/
         └── main.js     # LocalStorage処理
 ```
 
-## 🚀 セットアップ
+##  セットアップ
 
 ### 1. 依存パッケージのインストール
 
@@ -135,7 +135,7 @@ python app.py
 
 ブラウザで http://localhost:5000 にアクセス
 
-## 🖥️ 画面構成
+##  画面構成
 
 | 画面 | URL | 説明 |
 |------|-----|------|
@@ -144,7 +144,7 @@ python app.py
 | 交換結果画面 | `POST /exchange` | 受け取った短歌を表示、LocalStorageに自動保存 |
 | 受信履歴画面 | `/history` | ローカル保存された短歌のみ表示 |
 
-## 🗂 DB設計
+##  DB設計
 
 ### tanka_pool テーブル
 
@@ -167,7 +167,7 @@ DELETE FROM tanka_pool WHERE id = :id;
 INSERT INTO tanka_pool(content) VALUES(:content);
 ```
 
-## 🔐 プライバシー
+##  プライバシー
 
 - ログイン機能なし
 - ユーザー特定情報は保存しない
