@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}匿名短歌交換 - ホーム{% endblock %}
+
+{% block content %}
+<div class="home-content">
+    <div class="intro">
+        <p class="tagline">言葉を交わす、心を交わす</p>
+        <p class="description">
+            あなたの短歌を投稿すると、<br>
+            誰かの短歌が届きます。
+        </p>
+    </div>
+
+    <div class="buttons">
+        <a href="{{ url_for('submit') }}" class="btn btn-primary">
+            <span class="btn-icon">✍</span>
+            短歌を交換する
+        </a>
+        <a href="{{ url_for('history') }}" class="btn btn-secondary">
+            <span class="btn-icon">📖</span>
+            受け取った短歌を見る
+        </a>
+    </div>
+</div>
+{% endblock %}

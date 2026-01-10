@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}交換完了 - 匿名短歌交換{% endblock %}
+
+{% block content %}
+<div class="result-content">
+    <h2>交換が完了しました</h2>
+    <p class="success-message">あなたの短歌が誰かに届きました</p>
+
+    <div class="received-tanka" id="received-tanka">
+        <h3>受け取った短歌</h3>
+        <div class="tanka-display">
+            {% for line in received_tanka.split('\n') %}
+            <p class="tanka-line">{{ line }}</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="result-actions">
+        <a href="{{ url_for('submit') }}" class="btn btn-primary">もう一度交換する</a>
+        <a href="{{ url_for('history') }}" class="btn btn-secondary">履歴を見る</a>
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">ホームへ</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // LocalStorageに保存
+    document.addEventListener('DOMContentLoaded', function () {
+        var tankaContent = {{ received_tanka | tojson | safe
+    }};
+    saveTankaToHistory(tankaContent);
+    });
+</script>
+{% endblock %}

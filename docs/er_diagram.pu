@@ -1,0 +1,28 @@
+@startuml tanka_pool_er
+
+!define TABLE(x) class x << (T,#FFAAAA) >>
+!define PK(x) <b><u>x</u></b>
+
+skinparam class {
+    BackgroundColor #FEFECE
+    BorderColor #A80036
+    ArrowColor #A80036
+}
+
+title 匿名短歌交換サイト ER図
+
+TABLE(tanka_pool) {
+    PK(id) : SERIAL
+    --
+    content : TEXT NOT NULL
+    created_at : TIMESTAMP
+}
+
+note right of tanka_pool
+  短歌プール（交換待ち倉庫）
+  ・INSERT 1件 + DELETE 1件で
+  　総量は常に一定を維持
+  ・ユーザー情報は保存しない（匿名）
+end note
+
+@enduml
