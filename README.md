@@ -1,225 +1,118 @@
-# 匿名短歌交換
+# 匿名短歌交換アプリ (Tanka Exchange)
 
-匿名で短歌を投稿し、他の誰かの短歌と交換するWebアプリケーションです。
+匿名で短歌を投稿し、他の誰かの短歌と交換する「Web3 層構造」を採用したフルスタック Web アプリケーションです。
 
-##  概要
+## 🌟 概要
 
-- ユーザーは匿名で利用可能
-- 短歌を投稿すると、DBから他ユーザーの短歌をランダムに1件受け取る
-- 受け取った短歌はDBから削除される
-- 投稿した短歌はDBに保存される
-- 「INSERT 1件 + DELETE 1件」でDB内短歌総量は常に一定
+- **匿名性**: ユーザー登録不要。session_id による一意の識別のみ行います。
+- **一期一会**: 短歌を投稿すると、DB 内の誰かの短歌をランダムに 1 件受け取ります。
+- **データ不変性**: 「INSERT 1 件 + DELETE 1 件」のアルゴリズムにより、DB 内の短歌総量が一定に保たれます。
+- **デスクトップ対応**: ブラウザだけでなく、デスクトップアプリ（ウィンドウ）としても起動可能です。
 
-##  アーキテクチャ
+## 🏗️ アーキテクチャ
 
-Web 3層構造:
-- **Presentation Layer**: Web UI（HTML/CSS/JavaScript）
-- **Application Layer**: Flask（Python）
-- **Data Layer**: PostgreSQL
-
-### システム構成図
+システムは以下の **Web 3 層構造** で構成されています。
 
 ```mermaid
-flowchart TB
-    subgraph PL["Presentation Layer"]
-        Browser["🌐 ブラウザ<br>(Web UI)"]
-        Templates["📄 HTML Templates<br>🎨 CSS<br>⚡ JavaScript"]
-        LocalStorage[("💾 LocalStorage<br>受信履歴保存")]
+graph TD
+    subgraph "Presentation Tier (UI)"
+        A["ブラウザ / PyWebView"]
+        B["HTML5 / CSS3 / JavaScript"]
     end
-    
-    subgraph AL["Application Layer"]
-        Flask["🐍 Flask<br>(Python)"]
-        AppPy["📁 app.py<br>ルーティング・交換処理"]
-        ModelsPy["📁 models.py<br>DB操作関数"]
-        ConfigPy["📁 config.py<br>DB接続設定"]
-        Env["⚙️ .env"]
+
+    subgraph "Application Tier (Server)"
+        C["Waitress (WSGI Server)"]
+        D["Flask (Framework)"]
     end
-    
-    subgraph DL["Data Layer"]
-        PostgreSQL[("🐘 PostgreSQL")]
-        TankaPool["📊 tanka_pool<br>id (PK)<br>content<br>created_at"]
+
+    subgraph "Data Tier (Database)"
+        E["PostgreSQL (Docker)"]
+        F["Database Schema / Volume"]
     end
-    
-    Browser -->|HTTP Request| Flask
-    Flask -->|HTTP Response| Browser
-    Templates -.-> LocalStorage
-    Flask --> AppPy
-    AppPy --> ModelsPy
-    ModelsPy --> ConfigPy
-    ConfigPy --> Env
-    ModelsPy -->|SQL| PostgreSQL
-    PostgreSQL --> TankaPool
+
+    A <-->|HTTP| C
+    C --- D
+    D <-->|SQL / psycopg2| E
 ```
 
-### ER図
+詳細な解説資料は [docs/](./docs/) フォルダ内にあります。
 
-```mermaid
-erDiagram
-    tanka_pool {
-        SERIAL id PK "主キー"
-        TEXT content "短歌の内容 NOT NULL"
-        TIMESTAMP created_at "登録日時"
-    }
+## 📁 フォルダ・ファイル構成
+
+```text
+family_fishing_project/
+├── server.py           # Webサーバー起動スクリプト (Waitress使用)
+├── desktop_app.py      # デスクトップアプリ起動スクリプト (PyWebView使用)
+├── requirements.txt    # 依存パッケージ
+├── docker-compose.yml  # DB環境定義
+├── .env                # 環境変数
+├── app/                # アプリケーションロジック
+│   ├── main.py         # Flaskルーティング・自動セットアップ
+│   ├── models.py       # SQL操作 (JOIN, SubQuery, etc.)
+│   ├── config.py       # DB接続設定
+│   ├── static/         # 静的ファイル (CSS/JS)
+│   └── templates/      # Jinja2 テンプレート
+├── scripts/            # ユーティリティ
+│   ├── init_db.py      # DB初期化・ダミーデータ投入
+│   └── migrate_db.py   # スキーマ移行スクリプト
+└── docs/               # 技術解説ドキュメント (Markdown)
+    ├── SYSTEM_DIAGRAMS.md          # 構成図・ER図・シーケンス図
+    ├── DATABASE_TECHNICAL_REPORT.md # データベース技術仕様書
+    ├── WEB_3_TIER_ARCHITECTURE.md   # Web3層構造解説
+    └── PRESENTATION_GUIDE.md        # プレゼン用技術解説
 ```
 
-> **Note**: 匿名性を保つため、ユーザー情報は一切保存しません。受信履歴はブラウザのLocalStorageにのみ保存されます。
-
-##  ファイル構成
-
-```
-tanka_exchange/
-├── app.py              # メインFlaskアプリ
-├── config.py           # DB接続設定
-├── models.py           # DBモデル・操作関数
-├── init_db.py          # DB初期化・ダミーデータ投入
-├── requirements.txt    # Python依存パッケージ
-├── .env                # 環境変数（DB接続情報）
-├── docs/               # ドキュメント
-│   ├── system_architecture.drawio  # システム構成図
-│   └── er_diagram.pu               # ER図（PlantUML）
-├── templates/          # HTMLテンプレート
-│   ├── base.html       # 共通ベース
-│   ├── home.html       # ホーム画面
-│   ├── submit.html     # 短歌投稿画面
-│   ├── result.html     # 交換結果画面
-│   └── history.html    # 受信履歴画面
-└── static/
-    ├── css/
-    │   └── style.css   # スタイルシート
-    └── js/
-        └── main.js     # LocalStorage処理
-```
-
-##  セットアップ
+## 🚀 セットアップと起動方法
 
 ### 前提条件
 
-- **Python 3.7以上**
-- **Docker Desktop** ([インストールはこちら](https://www.docker.com/products/docker-desktop))
+- **Python 3.10+**
+- **Docker Desktop** (PostgreSQL の動作に必要)
 
-### 簡単セットアップ（推奨）
-
-Docker Desktopをインストール済みの場合、以下のコマンドだけで起動できます:
+### 1. 依存パッケージのインストール
 
 ```bash
-# 1. 依存パッケージのインストール
 pip install -r requirements.txt
-
-# 2. アプリケーションを起動（Docker自動起動 + DB自動初期化）
-python app.py
 ```
 
-アプリが自動的に以下を実行します:
-- ✅ Dockerコンテナの起動確認と自動起動
-- ✅ データベース接続の確認
-- ✅ データベースの初期化（初回のみ）
+### 2. アプリケーションの起動
 
-ブラウザで http://localhost:5000 にアクセス
+用途に合わせて 2 通りの起動方法があります。いずれの方法でも、**DB の起動(Docker)とテーブル初期化は自動で行われます。**
 
-### デスクトップアプリとして起動
-
-ブラウザではなく、専用のデスクトップウィンドウで起動することもできます:
+#### A. Web サーバーとして起動（ブラウザで使用）
 
 ```bash
-# 1. 依存パッケージのインストール（初回のみ）
-pip install -r requirements.txt
+python server.py
+```
 
-# 2. デスクトップアプリとして起動
+起動後、ブラウザで [http://localhost:5000](http://localhost:5000) にアクセスしてください。
+
+#### B. デスクトップアプリとして起動（専用ウィンドウで使用）
+
+```bash
 python desktop_app.py
 ```
 
-デスクトップウィンドウが自動的に開きます。ブラウザは不要です。
+専用のアプリケーションウィンドウが立ち上がります。
+
+## 📚 関連ドキュメント
+
+より詳細な技術情報は、以下のドキュメントを参照してください：
+
+- [システム設計図面集 (構成図/ER 図/シーケンス図)](./docs/SYSTEM_DIAGRAMS.md)
+- [データベース技術仕様書 (トランザクション/結合/制約)](./docs/DATABASE_TECHNICAL_REPORT.md)
+- [Web3 層構造の解説](./docs/WEB_3_TIER_ARCHITECTURE.md)
+- [Waitress への移行のまとめ](./docs/WAITRESS_IMPLEMENTATION_SUMMARY.md)
+- [プレゼンテーション用技術解説資料](./docs/PRESENTATION_GUIDE.md)
+
+## 🛠️ 将来の拡張性
+
+本アプリは疎結合な 3 層構造を採用しているため、以下の拡張が容易です：
+
+- フロントエンドのモバイルアプリ化（React Native 等）
+- データ層のクラウドマネージド DB（AWS RDS 等）への切り替え
+- アプリケーションサーバーの水平スケーリング
 
 ---
 
-### 手動セットアップ（従来の方法）
-
-#### 1. 依存パッケージのインストール
-
-```bash
-pip install -r requirements.txt
-```
-
-#### 2. PostgreSQLの設定
-
-**Option A: Docker使用（推奨）**
-
-```bash
-# PostgreSQLコンテナを起動
-docker-compose up -d
-```
-
-**Option B: ローカルPostgreSQL**
-
-1. PostgreSQLをインストール
-2. データベースとユーザーを作成:
-
-```sql
-CREATE DATABASE tanka_db;
-CREATE USER tanka_user WITH PASSWORD 'password';
-GRANT ALL PRIVILEGES ON DATABASE tanka_db TO tanka_user;
-```
-
-#### 3. 環境変数の設定
-
-`.env`ファイルを編集して、DB接続情報を設定:
-
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=tanka_db
-DB_USER=tanka_user
-DB_PASSWORD=password
-```
-
-#### 4. データベースの初期化
-
-```bash
-python init_db.py
-```
-
-#### 5. アプリケーションの起動
-
-```bash
-python app.py
-```
-
-ブラウザで http://localhost:5000 にアクセス
-
-##  画面構成
-
-| 画面 | URL | 説明 |
-|------|-----|------|
-| ホーム画面 | `/` | 「短歌を交換する」「受け取った短歌を見る」ボタン |
-| 短歌投稿画面 | `/submit` | 5行入力フォーム、投稿ボタン |
-| 交換結果画面 | `POST /exchange` | 受け取った短歌を表示、LocalStorageに自動保存 |
-| 受信履歴画面 | `/history` | ローカル保存された短歌のみ表示 |
-
-##  DB設計
-
-### tanka_pool テーブル
-
-| カラム | 型 | 説明 |
-|--------|------|------|
-| id | SERIAL | 主キー |
-| content | TEXT NOT NULL | 短歌の内容 |
-| created_at | TIMESTAMP | 登録日時 |
-
-### 必須SQL
-
-```sql
--- ランダム取得
-SELECT id, content FROM tanka_pool ORDER BY RANDOM() LIMIT 1;
-
--- 削除
-DELETE FROM tanka_pool WHERE id = :id;
-
--- 登録
-INSERT INTO tanka_pool(content) VALUES(:content);
-```
-
-##  プライバシー
-
-- ログイン機能なし
-- ユーザー特定情報は保存しない
-- 受信履歴はブラウザのLocalStorageに保存（サーバーには保存しない）
+University Database Management Project - 2026
