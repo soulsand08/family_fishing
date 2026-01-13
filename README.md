@@ -75,7 +75,21 @@ family_fishing_project/
 pip install -r requirements.txt
 ```
 
-### 2. アプリケーションの起動
+### 2. 環境変数の設定 (初回のみ)
+
+リポジトリにはセキュリティのため設定ファイルの見本のみが含まれています。以下のコマンドで設定ファイルを作成してください：
+
+```bash
+# Windows
+copy .env.example .env
+
+# macOS / Linux
+cp .env.example .env
+```
+
+※ Docker を使用する場合、デフォルト設定のままで動作します。
+
+### 3. アプリケーションの起動
 
 用途に合わせて 2 通りの起動方法があります。いずれの方法でも、**DB の起動(Docker)とテーブル初期化は自動で行われます。**
 
