@@ -53,7 +53,7 @@ def init_database():
             )
         ''')
         conn.commit()
-        print("✓ usersテーブルを作成しました")
+        print("[v] usersテーブルを作成しました")
         
         # 2. categoriesテーブル作成
         cursor.execute('''
@@ -64,7 +64,7 @@ def init_database():
             )
         ''')
         conn.commit()
-        print("✓ categoriesテーブルを作成しました")
+        print("[v] categoriesテーブルを作成しました")
         
         # 3. tanka_poolテーブル作成（Foreign Key追加）
         cursor.execute('''
@@ -77,7 +77,7 @@ def init_database():
             )
         ''')
         conn.commit()
-        print("✓ tanka_poolテーブルを作成しました（Foreign Key: user_id）")
+        print("[v] tanka_poolテーブルを作成しました（Foreign Key: user_id）")
         
         # 4. exchange_historyテーブル作成（Foreign Key使用）
         cursor.execute('''
@@ -92,7 +92,7 @@ def init_database():
             )
         ''')
         conn.commit()
-        print("✓ exchange_historyテーブルを作成しました（Foreign Key: user_id）")
+        print("[v] exchange_historyテーブルを作成しました（Foreign Key: user_id）")
         
         # 5. tanka_categoriesテーブル作成（多対多関係、複数Foreign Key）
         cursor.execute('''
@@ -103,7 +103,7 @@ def init_database():
             )
         ''')
         conn.commit()
-        print("✓ tanka_categoriesテーブルを作成しました（Foreign Key: tanka_id, category_id）")
+        print("[v] tanka_categoriesテーブルを作成しました（Foreign Key: tanka_id, category_id）")
         
         # 6. カテゴリデータ投入
         cursor.execute("SELECT COUNT(*) FROM categories")
@@ -115,9 +115,9 @@ def init_database():
                     (name, description)
                 )
             conn.commit()
-            print(f"✓ カテゴリデータを{len(CATEGORIES)}件投入しました")
+            print(f"[v] カテゴリデータを{len(CATEGORIES)}件投入しました")
         else:
-            print(f"✓ 既存カテゴリあり（{count}件）- スキップ")
+            print(f"[v] 既存カテゴリあり（{count}件）- スキップ")
         
         # 7. 短歌データ投入
         cursor.execute("SELECT COUNT(*) FROM tanka_pool")
@@ -144,10 +144,10 @@ def init_database():
                     )
             
             conn.commit()
-            print(f"✓ ダミー短歌を{len(DUMMY_TANKAS)}件投入しました")
-            print("✓ 短歌とカテゴリの関連付けを完了しました")
+            print(f"[v] ダミー短歌を{len(DUMMY_TANKAS)}件投入しました")
+            print("[v] 短歌とカテゴリの関連付けを完了しました")
         else:
-            print(f"✓ 既存短歌あり（{count}件）- スキップ")
+            print(f"[v] 既存短歌あり（{count}件）- スキップ")
         
         print("=" * 50)
         print("データベース初期化完了")
@@ -184,7 +184,7 @@ def init_database():
             print(f"  - {row[0]}.{row[1]} → {row[2]}.{row[3]}")
             
     except Exception as e:
-        print(f"✗ エラー: {e}")
+        print(f"[x] エラー: {e}")
         conn.rollback()
         raise
     finally:

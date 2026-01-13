@@ -151,39 +151,39 @@ def setup_docker_environment():
     import sys
     import os
     
-    print("🔍 Docker環境を確認中...")
+    print("[*] Docker環境を確認中...")
     
     # 1. Dockerがインストールされているか確認
     try:
         result = subprocess.run(['docker', '--version'], 
                               capture_output=True, text=True, timeout=10)
         if result.returncode != 0:
-            print("\n⚠️  Dockerがインストールされていません")
+            print("\n[!] Dockerがインストールされていません")
             print("   Docker Desktopをインストールしてください: https://www.docker.com/products/docker-desktop")
             sys.exit(1)
-        print(f"✓ Docker検出: {result.stdout.strip()}")
+        print(f"[v] Docker検出: {result.stdout.strip()}")
     except subprocess.TimeoutExpired:
-        print("\n✗ Dockerコマンドがタイムアウトしました")
+        print("\n[x] Dockerコマンドがタイムアウトしました")
         print("   Docker Desktopが起動しているか確認してください")
         sys.exit(1)
     except FileNotFoundError:
-        print("\n⚠️  Dockerがインストールされていません")
+        print("\n[!] Dockerがインストールされていません")
         print("   Docker Desktopをインストールしてください: https://www.docker.com/products/docker-desktop")
         sys.exit(1)
     
     # 2. Docker Desktopが起動しているか確認（docker infoで確認）
     try:
-        print("🐳 Docker Desktopの起動状態を確認中...")
+        print("[*] Docker Desktopの起動状態を確認中...")
         result = subprocess.run(['docker', 'info'], 
                               capture_output=True, text=True, timeout=15)
         if result.returncode != 0:
-            print("\n✗ Docker Desktopが起動していません")
+            print("\n[x] Docker Desktopが起動していません")
             print("   Docker Desktopを起動してから、再度実行してください")
             print(f"   エラー詳細: {result.stderr}")
             sys.exit(1)
-        print("✓ Docker Desktopは起動しています")
+        print("[v] Docker Desktopは起動しています")
     except subprocess.TimeoutExpired:
-        print("\n✗ Docker Desktopの確認がタイムアウトしました")
+        print("\n[x] Docker Desktopの確認がタイムアウトしました")
         print("   Docker Desktopを再起動してから、再度実行してください")
         sys.exit(1)
     
@@ -194,53 +194,53 @@ def setup_docker_environment():
                                   capture_output=True, text=True, timeout=10)
         if result_v2.returncode == 0:
             compose_cmd = ['docker', 'compose']
-            print(f"✓ Docker Compose検出: {result_v2.stdout.strip()}")
+            print(f"[v] Docker Compose検出: {result_v2.stdout.strip()}")
         else:
             result_v1 = subprocess.run(['docker-compose', '--version'], 
                                       capture_output=True, text=True, timeout=10)
             if result_v1.returncode == 0:
                 compose_cmd = ['docker-compose']
-                print(f"✓ Docker Compose検出: {result_v1.stdout.strip()}")
+                print(f"[v] Docker Compose検出: {result_v1.stdout.strip()}")
             else:
-                print("\n✗ docker-composeコマンドが見つかりません")
+                print("\n[x] docker-composeコマンドが見つかりません")
                 sys.exit(1)
     except subprocess.TimeoutExpired:
-        print("\n✗ docker-composeコマンドの確認がタイムアウトしました")
+        print("\n[x] docker-composeコマンドの確認がタイムアウトしました")
         sys.exit(1)
     except FileNotFoundError:
-        print("\n✗ docker-composeコマンドが見つかりません")
+        print("\n[x] docker-composeコマンドが見つかりません")
         sys.exit(1)
     
     # 4. tanka_postgresコンテナが起動しているか確認
     try:
-        print("📦 PostgreSQLコンテナの状態を確認中...")
+        print("[*] PostgreSQLコンテナの状態を確認中...")
         result = subprocess.run(['docker', 'ps', '--filter', 'name=tanka_postgres', '--format', '{{.Names}}'],
                               capture_output=True, text=True, timeout=15)
         
         if 'tanka_postgres' not in result.stdout:
-            print("🐳 PostgreSQLコンテナを起動中...")
+            print("[*] PostgreSQLコンテナを起動中...")
             # docker-compose up -d を実行
             result = subprocess.run(compose_cmd + ['up', '-d'],
                                   capture_output=True, text=True, timeout=120)
             if result.returncode == 0:
-                print("✓ PostgreSQLコンテナを起動しました")
+                print("[v] PostgreSQLコンテナを起動しました")
                 if result.stdout:
                     print(f"   {result.stdout.strip()}")
             else:
-                print(f"\n✗ コンテナ起動エラー:")
+                print(f"\n[x] コンテナ起動エラー:")
                 print(f"   {result.stderr}")
                 sys.exit(1)
         else:
-            print("✓ PostgreSQLコンテナは既に起動しています")
+            print("[v] PostgreSQLコンテナは既に起動しています")
     except subprocess.TimeoutExpired:
-        print("\n✗ Dockerコンテナの起動がタイムアウトしました")
+        print("\n[x] Dockerコンテナの起動がタイムアウトしました")
         print("   以下を確認してください:")
         print("   1. Docker Desktopが正常に動作しているか")
         print("   2. システムリソース（CPU/メモリ）に余裕があるか")
         print("   3. docker-compose.ymlファイルが存在するか")
         sys.exit(1)
     except Exception as e:
-        print(f"\n✗ Docker環境のセットアップエラー: {e}")
+        print(f"\n[x] Docker環境のセットアップエラー: {e}")
         sys.exit(1)
 
 
@@ -249,20 +249,20 @@ def wait_for_database(max_retries=30, retry_interval=1):
     import time
     from .config import get_db_connection
     
-    print("🔌 データベース接続を確認中...")
+    print("[*] データベース接続を確認中...")
     
     for i in range(max_retries):
         try:
             conn = get_db_connection()
             conn.close()
-            print("✓ データベースに接続しました")
+            print("[v] データベースに接続しました")
             return True
         except Exception as e:
             if i == 0:
                 print(f"   データベース起動待機中... (最大{max_retries}秒)")
             time.sleep(retry_interval)
     
-    print(f"✗ データベースに接続できませんでした（{max_retries}秒経過）")
+    print(f"[x] データベースに接続できませんでした（{max_retries}秒経過）")
     print("   docker-compose logsでログを確認してください")
     return False
 
@@ -279,11 +279,11 @@ if __name__ == '__main__':
         sys.exit(1)
     
     # 3. データベース初期化（初回のみ）
-    print("📊 データベースを初期化中...")
+    print("[*] データベースを初期化中...")
     from init_db import init_database
     init_database()
     
-    print("\n✨ アプリケーションを起動します")
+    print("\n[!] アプリケーションを起動します")
     print("   ブラウザで http://localhost:5000 にアクセスしてください\n")
     
     # 4. Flaskアプリ起動

@@ -32,9 +32,9 @@ def migrate_database():
                 ADD COLUMN exchange_count INTEGER DEFAULT 0
             """)
             conn.commit()
-            print("✓ exchange_count column added successfully")
+            print("[v] exchange_count column added successfully")
         else:
-            print("\n✓ exchange_count column already exists")
+            print("\n[v] exchange_count column already exists")
         
         # user_idカラムが存在するか確認
         cursor.execute("""
@@ -50,9 +50,9 @@ def migrate_database():
                 ADD COLUMN user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL
             """)
             conn.commit()
-            print("✓ user_id column added successfully")
+            print("[v] user_id column added successfully")
         else:
-            print("✓ user_id column already exists")
+            print("[v] user_id column already exists")
         
         print("\n" + "=" * 60)
         print("MIGRATION COMPLETE")
