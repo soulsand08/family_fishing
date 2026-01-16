@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="ai-advisor-container">
+        <!-- ヘッダー -->
+        <div class="advisor-header">
+            <div class="advisor-icon">🤖</div>
+            <div class="advisor-info">
+                <h2>AI 歌人に相談（Beta）</h2>
+                <p>あなたの心に寄り添い、短歌づくりをお手伝いします。<br>
+                <small>※ 現在はプロトタイプ動作モードです</small></p>
+            </div>
+            <a href="{{ url_for('home') }}" class="btn-home"> ホームへ戻る</a>
+        </div>
+
+        <!-- チャットエリア -->
+        <div class="chat-history" id="chatHistory">
+            <!-- 初期メッセージ -->
+            <div class="message ai-message">
+                <div class="message-content">
+                    こんにちは。AI歌人です。<br>
+                    今のあなたの気分や、詠みたい情景を教えてください。<br>
+                    過去の短歌データベース（{{ pool_count }}首）から、ヒントを探してきます。
+                </div>
+                <div class="message-time">Now</div>
+            </div>
+        </div>
+
+        <!-- 入力エリア -->
+        <div class="chat-input-area">
+            <div class="input-wrapper">
+                <textarea id="userInput" placeholder="例：仕事で疲れて、少し寂しい気持ち..." rows="2"></textarea>
+                <button id="sendBtn" onclick="sendMessage()">
+                    送信
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* AIアドバイザー専用スタイル */
+.ai-advisor-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 70vh;
+    min-height: 500px;
+}
+
+.advisor-header {
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.advisor-icon {
+    font-size: 2.5rem;
+    background: #e9ecef;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.advisor-info h2 {
+    font-size: 1.1rem;
+    margin: 0;
+    color: #333;
+}
+
+.advisor-info p {
+    font-size: 0.8rem;
+    margin: 4px 0 0;
+    color: #666;
+}
+
+.chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+    animation: fadeIn 0.3s ease;
+}
+
+.ai-message {
+    align-self: flex-start;
+}
+
+.user-message {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.message-content {
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    position: relative;
+    white-space: pre-wrap;
+}
+
+.ai-message .message-content {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-top-left-radius: 2px;
+    color: #333;
+}
+
+.user-message .message-content {
+    background: #7b6b5c; /* テーマカラー */
+    color: #fff;
+    border-top-right-radius: 2px;
+}
+
+.message-time {
+    font-size: 0.7rem;
+    color: #999;
+    margin-top: 4px;
+    padding: 0 4px;
+}
+
+.chat-input-area {
+    padding: 1rem;
+    background: #fff;
+    border-top: 1px solid #eee;
+}
+
+.input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+#userInput {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#userInput:focus {
+    border-color: #7b6b5c;
+}
+
+#sendBtn {
+    background: #7b6b5c;
+    color: white;
+    border: none;
+    padding: 0 1.5rem;
+    height: 50px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+#sendBtn:hover {
+    background: #5d4e42;
+}
+
+#sendBtn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* 引用短歌のスタイル */
+.ref-tanka {
+    margin: 10px 0;
+    padding: 10px;
+    background: #fdfdfd;
+    border-left: 3px solid #7b6b5c;
+    font-family: 'Yu Mincho', serif;
+    font-style: italic;
+    color: #555;
+}
+
+.btn-home {
+    margin-left: auto;
+    padding: 0.5rem 1rem;
+    background: #e9ecef;
+    color: #555;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.btn-home:hover {
+    background: #dde2e6;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+async function sendMessage() {
+    const input = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const history = document.getElementById('chatHistory');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    // ユーザーメッセージ表示
+    appendMessage(message, 'user');
+    input.value = '';
+    
+    // UI制御
+    input.disabled = true;
+    sendBtn.disabled = true;
+    sendBtn.innerText = '考え中...';
+
+    try {
+        // API呼び出し（モック）
+        const response = await fetch('/api/ai-consult', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: message })
+        });
+
+        const data = await response.json();
+        
+        // AI応答表示（少し遅延させて「考えている感」を出す）
+        setTimeout(() => {
+            appendMessage(data.response, 'ai');
+        }, 800);
+
+    } catch (error) {
+        appendMessage('申し訳ありません。AIとの通信に失敗しました。', 'ai');
+    } finally {
+        setTimeout(() => {
+            input.disabled = false;
+            sendBtn.disabled = false;
+            sendBtn.innerText = '送信';
+            input.focus();
+        }, 800);
+    }
+}
+
+function appendMessage(text, type) {
+    const history = document.getElementById('chatHistory');
+    const div = document.createElement('div');
+    div.className = `message ${type}-message`;
+    
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    div.innerHTML = `
+        <div class="message-content">${text}</div>
+        <div class="message-time">${time}</div>
+    `;
+    
+    history.appendChild(div);
+    history.scrollTop = history.scrollHeight;
+}
+
+// Enter送信（Shift+Enterは改行）
+document.getElementById('userInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+</script>
+{% endblock %}

@@ -68,15 +68,14 @@
 
 <body>
     <div class="category-container">
-        <h1>📚 カテゴリ: {{ category_name }}</h1>
-        <p><em>SQL要素: INNER JOIN（3テーブル結合）</em></p>
+        <h1>カテゴリ: {{ category_name }}</h1>
 
         <div class="category-nav">
             <strong>カテゴリ一覧:</strong>
             {% for cat in categories %}
             <a href="/category/{{ cat[1] }}">{{ cat[1] }}</a>
             {% endfor %}
-            <a href="/stats" style="background: #555;">📊 統計に戻る</a>
+            <a href="/stats" style="background: #555;">統計に戻る</a>
         </div>
 
         <div class="tanka-list">
@@ -97,7 +96,7 @@
         </div>
 
         <div style="text-align: center; margin-top: 20px;">
-            <a href="/" style="color: #8b4789;">🏠 ホームに戻る</a>
+            <a href="/" style="color: #8b4789;">ホームに戻る</a>
         </div>
     </div>
 </body>

@@ -11,9 +11,14 @@ from .models import (
     get_all_categories, get_all_tankas_with_categories, get_user_exchange_stats
 )
 import uuid
+import google.generativeai as genai
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this-in-production'  # セッション用
+
+# Google Gemini API設定 (Prototype: Hardcoded for demo)
+GENAI_API_KEY = "AIzaSyAKIWk5UJAiiVGHeXwqm8nxp7IGec0cKNs"
+genai.configure(api_key=GENAI_API_KEY)
 
 @app.before_request
 def ensure_session():
@@ -144,6 +149,63 @@ def api_pool_count():
     """プール内の短歌数を返すAPI（デバッグ用）"""
     count = get_pool_count()
     return jsonify({'count': count})
+
+# ==================== AI 歌人（Gemini Powered） ====================
+
+@app.route('/ai-advisor')
+def ai_advisor():
+    """AI歌人チャット画面"""
+    pool_count = get_pool_count()
+    return render_template('ai_advisor.html', pool_count=pool_count)
+
+@app.route('/api/ai-consult', methods=['POST'])
+def ai_consult():
+    """
+    AI相談API（実稼働プロトタイプ）
+    Gemini API + DB連携
+    """
+    data = request.json
+    user_message = data.get('message', '')
+    
+    try:
+        # 1. ユーザーのメッセージから、DB内の「参考短歌」を選定（今回はランダム）
+        # 将来的にはここをEmbedding検索にする（MCP活用ポイント）
+        ref_tanka_data = get_random_tanka()
+        
+        if ref_tanka_data:
+            tanka_content = ref_tanka_data[1]
+        else:
+            tanka_content = "春過ぎて\n夏来にけらし\n白妙の\n衣ほすてふ\n天の香具山" 
+
+        # 2. Geminiへのプロンプト作成 - 少し短めに調整
+        prompt = f"""
+        あなたは「AI歌人」です。短歌のデータベースを持つ相談役として、ユーザーの悩みに答え、参考となる短歌を紹介してください。
+
+        【ユーザーの入力】: 「{user_message}」
+
+        【データベースからの参考短歌】:
+        {tanka_content}
+
+        【指示】:
+        1. ユーザーの気持ちに共感してください。
+        2. 参考短歌を紹介し（引用部分はHTMLタグ `<div class='ref-tanka'>` で囲み、改行は `<br>` にする）、それがどうユーザーの心情と関わるか解説してください。
+        3. 全体で150文字程度で、優しく文学的な言葉遣いでまとめてください。
+        """
+        
+        # 3. Gemini API呼び出し
+        # 無料枠で高速な Flash モデルを使用
+        model = genai.GenerativeModel('gemini-flash-latest')
+        response = model.generate_content(prompt)
+        ai_text = response.text
+        
+        return jsonify({'response': ai_text})
+
+    except Exception as e:
+        import traceback
+        print(f"AI Error: {e}")
+        traceback.print_exc() # 詳細なエラーログを出力
+        # エラー時のフォールバック
+        return jsonify({'response': "申し訳ありません。現在AI歌人は瞑想中（API制限またはエラー）のようです。\n\n<div class='ref-tanka'>春過ぎて<br>夏来にけらし<br>白妙の<br>衣ほすてふ<br>天の香具山</div>\n\n代わりにこちらの歌をお届けします。また後でお話ししましょう。"})
 
 def setup_docker_environment():
     """Dockerコンテナの起動状態を確認し、必要に応じて起動"""

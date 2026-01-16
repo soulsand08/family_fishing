@@ -73,12 +73,11 @@
 
 <body>
     <div class="user-stats-container">
-        <h1>👤 マイ統計</h1>
-        <p><em>SQL要素: Foreign Key, JOIN, GROUP BY</em></p>
+        <h1>マイ統計</h1>
 
         <!-- ユーザー統計 -->
         <div class="stats-card">
-            <h2>📈 あなたの交換統計</h2>
+            <h2>あなたの交換統計</h2>
             {% if stats %}
             <div class="stat-item">
                 <span class="stat-label">セッションID:</span>
@@ -109,8 +108,7 @@
 
         <!-- 交換履歴 -->
         <div class="stats-card">
-            <h2>📜 交換履歴（最新20件）</h2>
-            <p><em>Foreign Keyによる履歴管理</em></p>
+            <h2>交換履歴（最新20件）</h2>
 
             {% if history %}
             {% for item in history %}
@@ -137,8 +135,8 @@
         </div>
 
         <div style="text-align: center; margin-top: 20px;">
-            <a href="/stats" style="color: #8b4789; margin-right: 20px;">📊 全体統計</a>
-            <a href="/" style="color: #8b4789;">🏠 ホーム</a>
+            <a href="/stats" style="color: #8b4789; margin-right: 20px;">全体統計</a>
+            <a href="/" style="color: #8b4789;">ホーム</a>
         </div>
     </div>
 </body>

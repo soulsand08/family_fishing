@@ -75,8 +75,10 @@ erDiagram
     exchange_history {
         int exchange_id PK
         int user_id FK
-        int given_tanka_id FK
-        int received_tanka_id FK
+        int given_tanka_id
+        string given_tanka_content
+        int received_tanka_id
+        string received_tanka_content
         timestamp exchanged_at
     }
 ```
