@@ -13,12 +13,19 @@ from .models import (
 import uuid
 import google.generativeai as genai
 
-app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this-in-production'  # セッション用
+import os
+from dotenv import load_dotenv
 
-# Google Gemini API設定 (Prototype: Hardcoded for demo)
-GENAI_API_KEY = "AIzaSyAKIWk5UJAiiVGHeXwqm8nxp7IGec0cKNs"
-genai.configure(api_key=GENAI_API_KEY)
+# .envファイルの読み込み
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')  # セッション用
+
+# Google Gemini API設定
+GENAI_API_KEY = os.getenv("GENAI_API_KEY")
+if GENAI_API_KEY:
+    genai.configure(api_key=GENAI_API_KEY)
 
 @app.before_request
 def ensure_session():
