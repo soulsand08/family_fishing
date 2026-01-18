@@ -1,3 +1,6 @@
+[ファミリーフィッシング.pdf](https://github.com/user-attachments/files/24697180/default.pdf)
+
+
 # 匿名短歌交換アプリ (Tanka Exchange)
 
 匿名で短歌を投稿し、他の誰かの短歌と交換する Web 3 層構造を採用したフルスタック Web アプリケーションです。
