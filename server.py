@@ -24,11 +24,11 @@ def main():
     from scripts.init_db import init_database
     init_database()
     
-    print("\n[*] サーバーを http://0.0.0.0:5000 で起動します...")
+    print("\n[*] サーバーを http://127.0.0.1:5000 で起動します...")
     print("  (停止するには Ctrl+C を入力してください)\n")
     
     # 4. Waitressサーバーを起動
-    serve(app, host='0.0.0.0', port=5000)
+    serve(app, host='127.0.0.1', port=5000)
 
 if __name__ == '__main__':
     main()
