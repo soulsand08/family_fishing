@@ -1,78 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}受信履歴 - 匿名短歌交換{% endblock %}
+{% block title %}私の歌集 - 匿名短歌交換{% endblock %}
 
 {% block content %}
 <div class="history-content">
-    <h2>受け取った短歌</h2>
+    <h2>私の歌集</h2>
 
     <div id="history-list" class="history-list">
-        <!-- JavaScriptで動的に表示 -->
-    </div>
-
-    <div id="no-history" class="no-history" style="display: none;">
-        <p>まだ短歌を受け取っていません</p>
-        <a href="{{ url_for('submit') }}" class="btn btn-primary">短歌を交換する</a>
+        {% if history %}
+            {% for item in history %}
+            <div class="history-item">
+                <div class="history-date">{{ item[3].strftime('%Y/%m/%d %H:%M:%S') }}</div>
+                <div class="tanka-display">
+                    {% for line in item[2].split('\n') %}
+                    <p class="tanka-line">{{ line }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div id="no-history" class="no-history">
+                <p>まだ短歌を受け取っていません</p>
+                <a href="{{ url_for('submit') }}" class="btn btn-primary">短歌を交換する</a>
+            </div>
+        {% endif %}
     </div>
 
     <div class="history-actions">
-        <button id="clear-history" class="btn btn-danger" style="display: none;">履歴をクリア</button>
         <a href="{{ url_for('home') }}" class="btn btn-secondary">ホームへ</a>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        displayHistory();
-
-        document.getElementById('clear-history').addEventListener('click', function () {
-            if (confirm('履歴をすべて削除しますか？')) {
-                clearHistory();
-                displayHistory();
-            }
-        });
-    });
-
-    function displayHistory() {
-        const historyList = document.getElementById('history-list');
-        const noHistory = document.getElementById('no-history');
-        const clearBtn = document.getElementById('clear-history');
-        const history = getTankaHistory();
-
-        historyList.innerHTML = '';
-
-        if (history.length === 0) {
-            noHistory.style.display = 'block';
-            clearBtn.style.display = 'none';
-        } else {
-            noHistory.style.display = 'none';
-            clearBtn.style.display = 'inline-block';
-
-            // 新しい順に表示
-            history.reverse().forEach(function (item, index) {
-                const div = document.createElement('div');
-                div.className = 'history-item';
-
-                const dateStr = new Date(item.timestamp).toLocaleString('ja-JP');
-
-                div.innerHTML = `
-                    <div class="history-date">${dateStr}</div>
-                    <div class="tanka-display">
-                        ${item.content.split('\n').map(line => `<p class="tanka-line">${escapeHtml(line)}</p>`).join('')}
-                    </div>
-                `;
-
-                historyList.appendChild(div);
-            });
-        }
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-</script>
+<!-- 履歴はサーバー側のデータベースから直接描画されるため、クライアントサイドのスクリプトは不要です -->
 {% endblock %}

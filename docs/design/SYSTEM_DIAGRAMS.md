@@ -8,7 +8,7 @@
 
 Web 3 層構造に基づいた物理的なコンポーネントの配置図です。
 
-```mermaid
+````mermaid
 graph TD
     subgraph "Presentation Tier (Client)"
         A["ブラウザ / PyWebView Window"]
@@ -20,8 +20,12 @@ graph TD
         D["Business Logic / app.main.py"]
     end
 
+    subgraph "External API (AI)"
+        G["Google Gemini API<br>(gemini-2.0-flash)"]
+    end
+
     subgraph "Data Tier (Infrastructure)"
-        E["PostgreSQL 15 / Docker"]
+        E["PostgreSQL + pgvector / Docker"]
         F["Database Volume"]
     end
 
@@ -29,12 +33,48 @@ graph TD
     B --- C
     C --- D
     D <-->|SQL / psycopg2| E
+    D <-->|API Key / JSON| G
     E --- F
-```
 
 ---
 
-## 2. 実体関連図 (ER Diagram)
+## 2. 【未来の展望】MCP 統合アーキテクチャ (Future Architecture with MCP)
+
+本プロジェクトの拡張構想である「MCP (Model Context Protocol)」を導入した構成図です。
+
+```mermaid
+graph TD
+    subgraph "Presentation Tier"
+        A["ブラウザ"]
+    end
+
+    subgraph "Application Tier"
+        B["Flask / Waitress"]
+    end
+
+    subgraph "Data & Tool Tier"
+        E[("PostgreSQL")]
+        H["MCP Server<br>(DB Connector)"]
+    end
+
+    subgraph "AI Core"
+        G["LLM (Gemini/Claude)"]
+    end
+
+    A <--> B
+    B <--> G
+    G <-->|MCP Protocol| H
+    H <-->|SQL Query| E
+````
+
+> [!NOTE] > **現在のプロトタイプとの違い**:
+> 現在は Flask が直接 DB と AI を仲介していますが、将来的に **MCP Server** を独立させることで、AI 自身が自律的に DB から必要な短歌を検索・収集できるようになります。
+
+````
+
+---
+
+## 3. 実体関連図 (ER Diagram)
 
 データベースのテーブル構造と、外部キーによるリレーションシップを示します。
 
@@ -57,6 +97,7 @@ erDiagram
         int id PK
         text content
         int user_id FK
+        vector embedding
         int exchange_count
         timestamp created_at
     }
@@ -81,15 +122,15 @@ erDiagram
         string received_tanka_content
         timestamp exchanged_at
     }
-```
+````
 
 ---
 
-## 3. シーケンス図 (Sequence Diagram)
+## 4. 短歌交換シーケンス (Main Flow)
 
 「短歌を投稿して交換する」という本アプリのメインフローの流れを示します。
 
-```mermaid
+````mermaid
 sequenceDiagram
     actor User as ユーザー
     participant Front as フロントエンド (JS)
@@ -104,7 +145,11 @@ sequenceDiagram
         Server->>DB: ランダムな短歌を1件取得
         DB-->>Server: 短歌データ (received_tanka)
         Server->>DB: 取得した短歌を削除 (DELETE)
-        Server->>DB: ユーザーの短歌を保存 (INSERT)
+
+        Note over Server, AI: 投稿された短歌をベクトル化 (Embedding)
+        Server->>AI: generate_embeddings(tanka)
+
+        Server->>DB: ユーザーの短歌とベクトルを保存 (INSERT)
         Server->>DB: 交換履歴を記録 (INSERT)
         Server->>DB: 交換回数を加算 (UPDATE)
         Note over Server, DB: トランザクション終了
@@ -112,12 +157,63 @@ sequenceDiagram
 
     Server-->>Front: 交換後の短歌データを返却
     Front->>User: 画面に新しい短歌を表示
-    Front->>Front: LocalStorage に履歴を保存
 ```
 
 ---
 
-## 4. 起動・初期化シーケンス
+## 5. 履歴表示シーケンス (History View Flow)
+
+過去に受け取った短歌をデータベースから取得して表示する流れです。
+
+```mermaid
+sequenceDiagram
+    actor User as ユーザー
+    participant Front as フロントエンド
+    participant Server as アプリサーバー
+    participant DB as データ層 (PostgreSQL)
+
+    User->>Front: 「履歴を見る」をクリック
+    Front->>Server: GET /history
+    Server->>DB: user_id に紐づく履歴を取得 (SELECT)
+    DB-->>Server: 履歴データ (List)
+    Server-->>Front: 履歴を反映した HTML を返却
+    Front->>User: 履歴一覧を表示
+```
+
+---
+
+## 6. AI 歌人相談シーケンス (AI Advisor Flow)
+
+AI 歌人がデータベースを参照（RAG：検索拡張生成）して回答を生成する流れです。
+
+```mermaid
+sequenceDiagram
+    actor User as ユーザー
+    participant Front as フロントエンド
+    participant Server as アプリサーバー (Gemini連携)
+    participant DB as データ層 (PostgreSQL)
+    participant AI as Gemini API (Google)
+
+    User->>Front: 悩みを入力・相談
+    Front->>Server: POST /api/ai-consult
+
+    Note over Server, AI: 相談文をベクトル化 (Embedding API)
+
+    Server->>DB: ベクトル探索で関連短歌を抽出 (SELECT <=> )
+    DB-->>Server: 関連短歌データ
+
+    Note over Server, AI: 悩みと短歌をプロンプトに注入
+
+    Server->>AI: generate_content(prompt)
+    AI-->>Server: AI生成された回答テキスト
+
+    Server-->>Front: 回答を返却 (JSON)
+    Front->>User: AI のアドバイスを表示
+```
+
+---
+
+## 7. 起動・初期化シーケンス
 
 アプリ起動時の自動セットアップの流れです。
 
@@ -140,3 +236,4 @@ sequenceDiagram
     Main-->>App: セットアップ完了
     App->>App: "Waitress + WebView 起動"
 ```
+````

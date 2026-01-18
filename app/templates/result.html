@@ -25,12 +25,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    // LocalStorageに保存
-    document.addEventListener('DOMContentLoaded', function () {
-        var tankaContent = {{ received_tanka | tojson | safe
-    }};
-    saveTankaToHistory(tankaContent);
-    });
-</script>
+<!-- 交換履歴はサーバー側で自動的にデータベースに記録されます -->
 {% endblock %}

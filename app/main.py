@@ -70,18 +70,31 @@ def exchange():
     if not any(lines):
         return render_template('submit.html', error='短歌を入力してください')
     
+    # --- RAG強化: ベクトル生成 ---
+    user_embedding = None
+    try:
+        embed_res = genai.embed_content(
+            model="models/text-embedding-004",
+            content=user_tanka,
+            task_type="retrieval_document"
+        )
+        user_embedding = embed_res['embedding']
+    except Exception as e:
+        print(f"Embedding Generation Error: {e}")
+        # エラーでも続行（ベクトルなしで登録）
+
     # 交換処理
-    received = get_random_tanka()
+    received = get_random_tanka(exclude_user_id=user_id)
     
     if received is None:
         return render_template('submit.html', error='交換できる短歌がありません')
     
     received_tanka_id, received_tanka_content = received
     
-    # ユーザーの短歌を登録
-    given_tanka_id = insert_tanka(user_tanka, user_id)
+    # ユーザーの短歌を登録（ベクトル付き）
+    given_tanka_id = insert_tanka(user_tanka, user_id, embedding=user_embedding)
     
-    # 交換履歴を記録（Foreign Key制約により、user_idはusersテーブルに存在する必要がある）
+    # 交換履歴を記録
     record_exchange(
         user_id=user_id,
         given_tanka_id=given_tanka_id,
@@ -97,8 +110,11 @@ def exchange():
 
 @app.route('/history')
 def history():
-    """受信履歴画面（LocalStorageから読み込み）"""
-    return render_template('history.html')
+    """受信履歴画面（データベースから取得）"""
+    session_id = session.get('session_id')
+    user_id = get_or_create_user(session_id)
+    history = get_user_exchange_history(user_id, limit=50)
+    return render_template('history.html', history=history)
 
 @app.route('/stats')
 def stats():
@@ -174,28 +190,40 @@ def ai_consult():
     data = request.json
     user_message = data.get('message', '')
     
+    # セッションからユーザーIDを取得（除外用）
+    session_id = session.get('session_id')
+    user_id = get_or_create_user(session_id) if session_id else None
+
     try:
-        # 1. ユーザーのメッセージから、DB内の「参考短歌」を選定（今回はランダム）
-        # 将来的にはここをEmbedding検索にする（MCP活用ポイント）
-        ref_tanka_data = get_random_tanka()
+        # 1. ユーザーのメッセージをベクトル化 (Embedding)
+        embed_result = genai.embed_content(
+            model="models/text-embedding-004",
+            content=user_message,
+            task_type="retrieval_query"
+        )
+        user_embedding = embed_result['embedding']
+
+        # 2. DBからベクトル探索（セマンティック検索）で「参考短歌」を選定
+        from .models import search_tanka_semantically
+        ref_tanka_data = search_tanka_semantically(user_embedding, exclude_user_id=user_id)
         
         if ref_tanka_data:
             tanka_content = ref_tanka_data[1]
         else:
             tanka_content = "春過ぎて\n夏来にけらし\n白妙の\n衣ほすてふ\n天の香具山" 
 
-        # 2. Geminiへのプロンプト作成 - 少し短めに調整
+        # 3. Geminiへのプロンプト作成
         prompt = f"""
         あなたは「AI歌人」です。短歌のデータベースを持つ相談役として、ユーザーの悩みに答え、参考となる短歌を紹介してください。
 
         【ユーザーの入力】: 「{user_message}」
 
-        【データベースからの参考短歌】:
+        【データベースからの参考短歌（ベクトル探索による抽出）】:
         {tanka_content}
 
         【指示】:
         1. ユーザーの気持ちに共感してください。
-        2. 参考短歌を紹介し（引用部分はHTMLタグ `<div class='ref-tanka'>` で囲み、改行は `<br>` にする）、それがどうユーザーの心情と関わるか解説してください。
+        2. 参考短歌を紹介し（引用部分はHTMLタグ <div class='ref-tanka'> で囲み、改行は <br> にする）、それがどうユーザーの心情と関わるか解説してください。
         3. 全体で150文字程度で、優しく文学的な言葉遣いでまとめてください。
         """
         

@@ -47,13 +47,28 @@ CATEGORIES = [
 
 def init_database():
     """データベースを初期化"""
+    reset = "--reset" in sys.argv
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
         print("=" * 50)
-        print("データベース初期化開始")
+        print("データベース初期化開始" + (" (RESETモード)" if reset else ""))
         print("=" * 50)
+        
+        if reset:
+            print("[*] 既存のテーブルを削除しています...")
+            cursor.execute("DROP TABLE IF EXISTS tanka_categories CASCADE")
+            cursor.execute("DROP TABLE IF EXISTS exchange_history CASCADE")
+            cursor.execute("DROP TABLE IF EXISTS tanka_pool CASCADE")
+            cursor.execute("DROP TABLE IF EXISTS categories CASCADE")
+            cursor.execute("DROP TABLE IF EXISTS users CASCADE")
+            conn.commit()
+
+        # 0. vector拡張を有効化 (ankane/pgvector イメージ使用)
+        cursor.execute('CREATE EXTENSION IF NOT EXISTS vector')
+        conn.commit()
+        print("[v] vector 拡張を有効化しました")
         
         # 1. usersテーブル作成
         cursor.execute('''
@@ -84,6 +99,7 @@ def init_database():
                 id SERIAL PRIMARY KEY,
                 content TEXT NOT NULL,
                 user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+                embedding vector(768),
                 exchange_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )

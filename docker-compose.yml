@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
-    image: postgres:15
+    image: ankane/pgvector:v0.5.1
     container_name: tanka_postgres
     environment:
       POSTGRES_DB: tanka_db

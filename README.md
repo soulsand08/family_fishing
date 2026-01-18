@@ -1,18 +1,18 @@
 # 匿名短歌交換アプリ (Tanka Exchange)
 
-匿名で短歌を投稿し、他の誰かの短歌と交換する「Web3 層構造」を採用したフルスタック Web アプリケーションです。
+匿名で短歌を投稿し、他の誰かの短歌と交換する Web 3 層構造を採用したフルスタック Web アプリケーションです。
 
-## 🌟 概要
+## 概要
 
 - **匿名性**: ユーザー登録不要。session_id による一意の識別のみ行います。
-- **一期一会**: 短歌を投稿すると、DB 内の誰かの短歌をランダムに 1 件受け取ります。
-- **データ不変性**: 「INSERT 1 件 + DELETE 1 件」のアルゴリズムにより、DB 内の短歌総量が一定に保たれます。
-- **AI 歌人 (NEW)**: Google Gemini API と連携し、データベース内の短歌を参照しながら創作を支援するチャット機能。
-- **デスクトップ対応**: ブラウザだけでなく、デスクトップアプリ（ウィンドウ）としても起動可能です。
+- **一期一会**: 短歌を投稿すると、DB 内の自分以外の短歌をランダムに 1 件受け取ります。
+- **データ不変性**: INSERT 1 件 + DELETE 1 件のアルゴリズムにより、DB 内の短歌総量が一定に保たれます。
+- **AI 歌人 (RAG 強化版)**: Google Gemini API と PostgreSQL (pgvector) を連携させ、データベース内の短歌を意味ベースで検索（ベクトル探索）して回答する RAG 構成を実装しています。
+- **デスクトップ対応**: ブラウザだけでなく、PyWebView を利用したデスクトップアプリとしても起動可能です。
 
-## 🏗️ アーキテクチャ
+## アーキテクチャ
 
-システムは以下の **Web 3 層構造** で構成されています。
+システムは以下の Web 3 層構造で構成されています。
 
 ```mermaid
 graph TD
@@ -27,7 +27,7 @@ graph TD
     end
 
     subgraph "Data Tier (Database)"
-        E["PostgreSQL (Docker)"]
+        E["PostgreSQL + pgvector (Docker)"]
         F["Database Schema / Volume"]
     end
 
@@ -36,39 +36,40 @@ graph TD
     D <-->|SQL / psycopg2| E
 ```
 
-詳細な解説資料は [docs/](./docs/) フォルダ内にあります。
+詳細な解説資料は docs/ フォルダ内にあります。
 
-## 📁 フォルダ・ファイル構成
+## フォルダ・ファイル構成
 
 ```text
 family_fishing_project/
 ├── server.py           # Webサーバー起動スクリプト (Waitress使用)
 ├── desktop_app.py      # デスクトップアプリ起動スクリプト (PyWebView使用)
 ├── requirements.txt    # 依存パッケージ
-├── docker-compose.yml  # DB環境定義
-├── .env                # 環境変数
+├── docker-compose.yml  # DB環境定義 (pgvectorイメージ使用)
+├── .env                # 環境変数 (APIキー等)
 ├── app/                # アプリケーションロジック
-│   ├── main.py         # Flaskルーティング・自動セットアップ
-│   ├── models.py       # SQL操作 (JOIN, SubQuery, etc.)
+│   ├── main.py         # Flaskルーティング・AI連携ロジック
+│   ├── models.py       # SQL操作 (JOIN, SubQuery, Vector Search, etc.)
 │   ├── config.py       # DB接続設定
 │   ├── static/         # 静的ファイル (CSS/JS)
 │   └── templates/      # Jinja2 テンプレート
 ├── scripts/            # ユーティリティ
-│   ├── init_db.py      # DB初期化・ダミーデータ投入
-│   └── migrate_db.py   # スキーマ移行スクリプト
-└── docs/               # 技術解説ドキュメント (Markdown)
-    ├── SYSTEM_DIAGRAMS.md          # 構成図・ER図・シーケンス図
-    ├── DATABASE_TECHNICAL_REPORT.md # データベース技術仕様書
-    ├── WEB_3_TIER_ARCHITECTURE.md   # Web3層構造解説
-    └── PRESENTATION_GUIDE.md        # プレゼン用技術解説
+│   ├── init_db.py      # DB初期化・ダミーデータ投入 (--reset 機能あり)
+│   ├── update_embeddings.py # 既存短歌のベクトル(Embedding)生成・更新
+│   ├── test_db.py      # 接続・環境テストスクリプト
+│   └── tests/          # 各種テスト・デバッグスクリプト
+└── docs/               # 技術解説ドキュメント
+    ├── design/         # 構成図・ER図等
+    ├── presentation/   # プレゼン用スライド・台本等
+    └── technical/      # データベース技術詳細・レポート等
 ```
 
-## 🚀 セットアップと起動方法
+## セットアップと起動方法
 
 ### 前提条件
 
 - **Python 3.10+**
-- **Docker Desktop** (PostgreSQL の動作に必要)
+- **Docker Desktop** (PostgreSQL + pgvector の動作に必要)
 
 ### 1. 依存パッケージのインストール
 
@@ -78,7 +79,7 @@ pip install -r requirements.txt
 
 ### 2. 環境変数の設定 (初回のみ)
 
-リポジトリにはセキュリティのため設定ファイルの見本のみが含まれています。以下のコマンドで設定ファイルを作成してください：
+.env.example をコピーして .env を作成し、GENAI_API_KEY を設定してください。
 
 ```bash
 # Windows
@@ -88,11 +89,9 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-※ Docker を使用する場合、デフォルト設定のままで動作します。
-
 ### 3. アプリケーションの起動
 
-用途に合わせて 2 通りの起動方法があります。いずれの方法でも、**DB の起動(Docker)とテーブル初期化は自動で行われます。**
+用途に合わせて 2 通りの起動方法があります。いずれの方法でも、DB の起動(Docker)とテーブル初期化は自動で行われます。
 
 #### A. Web サーバーとして起動（ブラウザで使用）
 
@@ -100,7 +99,7 @@ cp .env.example .env
 python server.py
 ```
 
-起動後、ブラウザで [http://localhost:5000](http://localhost:5000) にアクセスしてください。
+起動後、ブラウザで http://localhost:5000 にアクセスしてください。
 
 #### B. デスクトップアプリとして起動（専用ウィンドウで使用）
 
@@ -110,36 +109,29 @@ python desktop_app.py
 
 専用のアプリケーションウィンドウが立ち上がります。
 
-## 📚 関連ドキュメント
+### 4. データベース管理（任意）
+
+- **完全初期化**: `python scripts/init_db.py --reset`
+- **ベクトルデータの再生成**: `python scripts/update_embeddings.py`
+
+## 関連ドキュメント
 
 より詳細な技術情報は、以下のドキュメントを参照してください：
 
-- [システム設計図面集 (構成図/ER 図/シーケンス図)](./docs/SYSTEM_DIAGRAMS.md)
-- [データベース技術仕様書 (トランザクション/結合/制約)](./docs/DATABASE_TECHNICAL_REPORT.md)
-- [Web3 層構造の解説](./docs/WEB_3_TIER_ARCHITECTURE.md)
-- [Waitress への移行のまとめ](./docs/WAITRESS_IMPLEMENTATION_SUMMARY.md)
-- [プレゼンテーション用技術解説資料](./docs/PRESENTATION_GUIDE.md)
+- [システム設計図面集 (構成図/ER 図/シーケンス図)](./docs/design/SYSTEM_DIAGRAMS.md)
+- [データベース技術仕様書 (トランザクション/結合/制約)](./docs/technical/DATABASE_TECHNICAL_REPORT.md)
+- [Web3 層構造の解説](./docs/design/WEB_3_TIER_ARCHITECTURE.md)
+- [プレゼンテーション用・技術解説カンニングペーパー](./docs/presentation/PRESENTATION_FINAL_CHEAT_SHEET.md)
 
-## 🛠️ 将来の拡張性
+## AI 歌人（Gemini API 連携）とベクトル探索
 
-本アプリは疎結合な 3 層構造を採用しているため、以下の拡張が容易です：
+本アプリは、Google Gemini API と PostgreSQL の pgvector 拡張を活用した RAG (Retrieval-Augmented Generation) 機能を搭載しています。
 
-- フロントエンドのモバイルアプリ化（React Native 等）
-- データ層のクラウドマネージド DB（AWS RDS 等）への切り替え
-- アプリケーションサーバーの水平スケーリング
-
-## 🤖 AI 歌人（Gemini API 連携）について
-
-本アプリは、Google Gemini API を活用した実験的な機能「AI 歌人」を搭載しています。
-
-- **機能**: ユーザーが入力した「今の気持ち」に対し、AI が共感しつつ、データベース内の過去の短歌から 1 首を紹介します。
-- **目的**: 自分の気持ちを言葉にするのが苦手なユーザーの創作を支援し、「短歌＝難しい」というハードルを下げること。
-- **技術**:
-  - `google-generativeai` ライブラリを使用
-  - モデル: `gemini-flash-latest` (高速・軽量モデル)
-  - データベース内からランダム（将来はベクトル検索）に短歌を取得し、プロンプトにコンテキストとして注入 (RAG の簡易実装)
-
----
+- **機能**: ユーザーのメッセージに対し、AI が共感しつつ、データベース内から「意味が近い短歌」を自動抽出して引用・解説します。
+- **技術詳細**:
+  - **Embedding**: `google-generativeai` を使用し、短歌とユーザー入力を 768 次元のベクトルに変換。
+  - **ベクトル探索**: pgvector の `<=>` (コサイン距離) 演算子を用いて、DB 内部で高速なセマンティック検索を実行。
+  - **モデル**: `gemini-flash-latest` を採用し、低遅延なレスポンスを実現。
 
 ---
 

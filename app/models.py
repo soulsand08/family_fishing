@@ -37,7 +37,7 @@ def get_or_create_user(session_id):
 
 # ==================== 短歌操作（基本） ====================
 
-def get_random_tanka():
+def get_random_tanka(exclude_user_id=None):
     """
     tanka_poolからランダムに1件取得
     Returns: (id, content) or None
@@ -45,9 +45,78 @@ def get_random_tanka():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, content FROM tanka_pool ORDER BY RANDOM() LIMIT 1")
+        if exclude_user_id:
+            # 自分の歌を除外して取得
+            cursor.execute("""
+                SELECT id, content FROM tanka_pool 
+                WHERE user_id IS NULL OR user_id != %s 
+                ORDER BY RANDOM() LIMIT 1
+            """, (exclude_user_id,))
+        else:
+            cursor.execute("SELECT id, content FROM tanka_pool ORDER BY RANDOM() LIMIT 1")
         result = cursor.fetchone()
         return result
+    finally:
+        cursor.close()
+        conn.close()
+
+def search_tanka_semantically(embedding, limit=1, exclude_user_id=None):
+    """
+    ベクトル探索（コサイン類似度）
+    Returns: (id, content) or None
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        if exclude_user_id:
+            # 自分の歌を除外して検索
+            cursor.execute("""
+                SELECT id, content 
+                FROM tanka_pool 
+                WHERE embedding IS NOT NULL 
+                AND (user_id IS NULL OR user_id != %s)
+                ORDER BY embedding <=> %s::vector 
+                LIMIT %s
+            """, (exclude_user_id, embedding, limit))
+        else:
+            # <=> はコサイン距離（小さいほど似ている）
+            cursor.execute("""
+                SELECT id, content 
+                FROM tanka_pool 
+                WHERE embedding IS NOT NULL
+                ORDER BY embedding <=> %s::vector 
+                LIMIT %s
+            """, (embedding, limit))
+        result = cursor.fetchone()
+        return result
+    finally:
+        cursor.close()
+        conn.close()
+
+def update_tanka_embedding(tanka_id, embedding):
+    """
+    短歌のベクトルデータを更新
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE tanka_pool 
+            SET embedding = %s::vector 
+            WHERE id = %s
+        """, (embedding, tanka_id))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_tankas_without_embeddings():
+    """ベクトルデータが未生成の短歌を取得"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, content FROM tanka_pool WHERE embedding IS NULL")
+        return cursor.fetchall()
     finally:
         cursor.close()
         conn.close()
@@ -65,7 +134,7 @@ def delete_tanka(tanka_id):
         cursor.close()
         conn.close()
 
-def insert_tanka(content, user_id=None):
+def insert_tanka(content, user_id=None, embedding=None):
     """
     新しい短歌を登録
     """
@@ -73,8 +142,8 @@ def insert_tanka(content, user_id=None):
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "INSERT INTO tanka_pool(content, user_id) VALUES (%s, %s) RETURNING id",
-            (content, user_id)
+            "INSERT INTO tanka_pool(content, user_id, embedding) VALUES (%s, %s, %s) RETURNING id",
+            (content, user_id, embedding)
         )
         tanka_id = cursor.fetchone()[0]
         conn.commit()
