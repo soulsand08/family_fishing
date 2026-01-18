@@ -21,7 +21,7 @@ graph TD
     end
 
     subgraph "External API (AI)"
-        G["Google Gemini API<br>(gemini-2.0-flash)"]
+        G["Google Gemini API<br>(Flash)"]
     end
 
     subgraph "Data Tier (Infrastructure)"
@@ -31,7 +31,7 @@ graph TD
 
     A <-->|HTTP Request/Response| B
     B --- C
-    C --- D
+    C <-->|Business Logic / RAG| D
     D <-->|SQL / psycopg2| E
     D <-->|API Key / JSON| G
     E --- F

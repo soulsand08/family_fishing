@@ -18,22 +18,27 @@
 graph TD
     subgraph "Presentation Tier (UI)"
         A["ブラウザ / PyWebView"]
-        B["HTML5 / CSS3 / JavaScript"]
     end
 
     subgraph "Application Tier (Server)"
-        C["Waitress (WSGI Server)"]
-        D["Flask (Framework)"]
+        B["Waitress (WSGI Server)"]
+        C["Flask (Framework)"]
+    end
+
+    subgraph "External API (AI)"
+        G["Google Gemini API"]
     end
 
     subgraph "Data Tier (Database)"
-        E["PostgreSQL + pgvector (Docker)"]
-        F["Database Schema / Volume"]
+        D["PostgreSQL + pgvector (Docker)"]
+        E["Database Volume"]
     end
 
-    A <-->|HTTP| C
-    C --- D
-    D <-->|SQL / psycopg2| E
+    A <-->|HTTP| B
+    B --- C
+    C <-->|SQL / psycopg2| D
+    C <-->|Generative AI / RAG| G
+    D --- E
 ```
 
 詳細な解説資料は docs/ フォルダ内にあります。
