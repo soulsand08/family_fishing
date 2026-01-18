@@ -43,6 +43,56 @@ graph TD
 
 詳細な解説資料は docs/ フォルダ内にあります。
 
+## データベース設計 (ER Diagram)
+
+テーブル間のリレーションシップを示す実体関連図です。
+
+```mermaid
+erDiagram
+    users ||--o{ tanka_pool : "posted by"
+    users ||--o{ exchange_history : "exchanged by"
+    tanka_pool ||--o{ tanka_categories : "categorized by"
+    categories ||--o{ tanka_categories : "belongs to"
+    tanka_pool ||--o{ exchange_history : "referenced as given/received"
+
+    users {
+        int user_id PK
+        string session_id UK
+        string username
+        timestamp created_at
+    }
+
+    tanka_pool {
+        int id PK
+        text content
+        int user_id FK
+        vector embedding
+        int exchange_count
+        timestamp created_at
+    }
+
+    categories {
+        int category_id PK
+        string name UK
+        text description
+    }
+
+    tanka_categories {
+        int tanka_id FK, PK
+        int category_id FK, PK
+    }
+
+    exchange_history {
+        int exchange_id PK
+        int user_id FK
+        int given_tanka_id
+        string given_tanka_content
+        int received_tanka_id
+        string received_tanka_content
+        timestamp exchanged_at
+    }
+```
+
 ## フォルダ・ファイル構成
 
 ```text
