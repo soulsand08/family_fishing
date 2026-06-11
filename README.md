@@ -115,7 +115,6 @@ family_fishing_project/
 │   └── tests/          # 各種テスト・デバッグスクリプト
 └── docs/               # 技術解説ドキュメント
     ├── design/         # 構成図・ER図等
-    ├── presentation/   # プレゼン用スライド・台本等
     └── technical/      # データベース技術詳細・レポート等
 ```
 
@@ -176,7 +175,6 @@ python desktop_app.py
 - [システム設計図面集 (構成図/ER 図/シーケンス図)](./docs/design/SYSTEM_DIAGRAMS.md)
 - [データベース技術仕様書 (トランザクション/結合/制約)](./docs/technical/DATABASE_TECHNICAL_REPORT.md)
 - [Web3 層構造の解説](./docs/design/WEB_3_TIER_ARCHITECTURE.md)
-- [プレゼンテーション用・技術解説カンニングペーパー](./docs/presentation/PRESENTATION_FINAL_CHEAT_SHEET.md)
 
 ## AI 歌人（Gemini API 連携）とベクトル探索
 
@@ -189,5 +187,3 @@ python desktop_app.py
   - **モデル**: `gemini-flash-latest` を採用し、低遅延なレスポンスを実現。
 
 ---
-
-University Database Management Project - 2026
